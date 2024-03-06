@@ -58,3 +58,15 @@ class ScriptAuthenticator(Authenticator):
 
 
 register_authenticator(ScriptAuthenticator())
+
+
+class PamAuthenticator(Authenticator):
+    def authenticate(self, username: str, password: str, parameters: dict[str, list[str]]) -> bool:
+        service = next(iter(parameters.get('service') or []), None)
+        if service is None:
+            return False
+        import pam
+        return pam.authenticate(username=username, password=password, service=service)
+
+
+register_authenticator(PamAuthenticator())

@@ -5,8 +5,10 @@ name = "pypi"
 
 [packages]
 click = "~=8.1"
+python-pam = "~=2.0"
 
 [dev-packages]
+pyinstaller = "~=6.4"
 
 [requires]
 python_version = "3"
