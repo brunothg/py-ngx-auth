@@ -18,27 +18,12 @@ def parse_basic_auth_header(header: str) -> tuple[str, str, str]:
 
 
 class NgxAuthRequestHandler(BaseHTTPRequestHandler):
-    _success_code: int
-    _error_code: int
-    _realm: str
-    _allow_anonymous: bool
-    _allow_no_password: bool
     _authenticators: list[Authenticator]
 
     def __init__(
             self, request, client_address, server,
-            success_code: int = None,
-            error_code: int = None,
-            realm: str = None,
-            allow_anonymous: bool = None,
-            allow_no_password: bool = None,
             authenticators: list[Authenticator] = None,
     ):
-        self._success_code = success_code
-        self._error_code = error_code
-        self._realm = realm
-        self._allow_anonymous = allow_anonymous
-        self._allow_no_password = allow_no_password
         self._authenticators = authenticators or authenticator.get_authenticators()
         super().__init__(request, client_address, server)
 
@@ -51,28 +36,23 @@ class NgxAuthRequestHandler(BaseHTTPRequestHandler):
         return authenticators or []
 
     def _get_allow_anonymous(self) -> bool:
-        return (self._allow_anonymous
-                or next(iter(self.get_query_parameters().get('allow_anonymous') or []), None)
+        return (next(iter(self.get_query_parameters().get('allow_anonymous') or []), None)
                 or False)
 
     def _get_allow_no_pwd(self) -> bool:
-        return (self._allow_no_password
-                or next(iter(self.get_query_parameters().get('allow_no_password') or []), None)
+        return (next(iter(self.get_query_parameters().get('allow_no_password') or []), None)
                 or False)
 
     def _get_realm(self) -> str:
-        return (self._realm
-                or next(iter(self.get_query_parameters().get('realm') or []), None)
+        return (next(iter(self.get_query_parameters().get('realm') or []), None)
                 or "Restricted Access")
 
     def _get_success_code(self) -> int:
-        return (self._success_code
-                or next(iter(self.get_query_parameters().get('success_code') or []), None)
+        return (next(iter(self.get_query_parameters().get('success_code') or []), None)
                 or 204)
 
     def _get_error_code(self) -> int:
-        return (self._error_code
-                or next(iter(self.get_query_parameters().get('error_code') or []), None)
+        return (next(iter(self.get_query_parameters().get('error_code') or []), None)
                 or self._get_auth_code())
 
     def _get_auth_code(self) -> int:
@@ -132,20 +112,7 @@ class NgxAuthRequestHandler(BaseHTTPRequestHandler):
         self.do_GET()
 
 
-def make_ngx_auth_request_handler(
-        success_code: int = None,
-        error_code: int = None,
-        realm: str = None,
-        allow_anonymous: bool = None,
-        allow_no_password: bool = None,
-        authenticators: list[Authenticator] = None,
-) -> Callable[[any, any, any], BaseHTTPRequestHandler]:
+def make_ngx_auth_request_handler() -> Callable[[any, any, any], BaseHTTPRequestHandler]:
     return lambda request, client_address, server: NgxAuthRequestHandler(
         request, client_address, server,
-        success_code=success_code,
-        error_code=error_code,
-        realm=realm,
-        allow_anonymous=allow_anonymous,
-        allow_no_password=allow_no_password,
-        authenticators=authenticators,
     )
