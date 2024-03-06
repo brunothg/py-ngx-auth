@@ -18,7 +18,6 @@ def parse_basic_auth_header(header: str) -> tuple[str, str, str]:
 
 
 class NgxAuthRequestHandler(BaseHTTPRequestHandler):
-    _authenticators: list[Authenticator]
 
     def __init__(
             self, request, client_address, server,
