@@ -2,7 +2,9 @@ import base64
 import urllib.parse
 from http.server import BaseHTTPRequestHandler
 from typing import Callable
-from authenticator import Authenticator, DenyAuthenticator
+from functools import reduce
+import authenticator
+from authenticator import Authenticator
 
 
 def parse_basic_auth_header(header: str) -> tuple[str, str, str]:
@@ -16,11 +18,12 @@ def parse_basic_auth_header(header: str) -> tuple[str, str, str]:
 
 
 class NgxAuthRequestHandler(BaseHTTPRequestHandler):
-    _success_code: int = None,
-    _error_code: int = None,
-    _realm: str = None,
-    _allow_anonymous: bool = None,
-    _allow_no_password: bool = None,
+    _success_code: int
+    _error_code: int
+    _realm: str
+    _allow_anonymous: bool
+    _allow_no_password: bool
+    _authenticators: list[Authenticator]
 
     def __init__(
             self, request, client_address, server,
@@ -29,16 +32,23 @@ class NgxAuthRequestHandler(BaseHTTPRequestHandler):
             realm: str = None,
             allow_anonymous: bool = None,
             allow_no_password: bool = None,
+            authenticators: list[Authenticator] = None,
     ):
         self._success_code = success_code
         self._error_code = error_code
         self._realm = realm
         self._allow_anonymous = allow_anonymous
         self._allow_no_password = allow_no_password
+        self._authenticators = authenticators or authenticator.get_authenticators()
         super().__init__(request, client_address, server)
 
-    def _get_authenticator(self) -> Authenticator:
-        return DenyAuthenticator()  # TODO _get_authenticator
+    def _get_authenticator(self) -> list[Authenticator]:
+        authenticators = [
+            auth
+            for auth in self._authenticators
+            if auth.get_name() in (self.get_query_parameters().get('authenticator') or [])
+        ]
+        return authenticators or []
 
     def _get_allow_anonymous(self) -> bool:
         return (self._allow_anonymous
@@ -77,9 +87,15 @@ class NgxAuthRequestHandler(BaseHTTPRequestHandler):
     def get_query_path(self) -> str:
         return self._get_url_parts().path
 
-    def authrorize_creds(self, username, password):
-        authenticator = self._get_authenticator()
-        return authenticator.authenticate(username, password)
+    def authrorize_creds(self, username, password) -> bool:
+        return reduce(
+            lambda a, b: a or b,
+            [
+                auth.authenticate(username=username, password=password, parameters=self.get_query_parameters())
+                for auth in self._get_authenticator()
+            ],
+            False
+        )
 
     def send_head(self):
         req_auth_code: int = self._get_auth_code()
@@ -122,6 +138,7 @@ def make_ngx_auth_request_handler(
         realm: str = None,
         allow_anonymous: bool = None,
         allow_no_password: bool = None,
+        authenticators: list[Authenticator] = None,
 ) -> Callable[[any, any, any], BaseHTTPRequestHandler]:
     return lambda request, client_address, server: NgxAuthRequestHandler(
         request, client_address, server,
@@ -130,4 +147,5 @@ def make_ngx_auth_request_handler(
         realm=realm,
         allow_anonymous=allow_anonymous,
         allow_no_password=allow_no_password,
+        authenticators=authenticators,
     )

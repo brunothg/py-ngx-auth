@@ -4,7 +4,9 @@ from http.server import ThreadingHTTPServer, HTTPServer
 
 import click
 
+import authenticator
 import handler
+from authenticator import Authenticator
 
 
 @click.command()
@@ -20,13 +22,30 @@ def main(
         ip: str = '0.0.0.0',
         port: int = 8080,
         threaded: bool = False,
-        **kwargs
+        success_code: int = None,
+        error_code: int = None,
+        realm: str = None,
+        allow_anonymous: bool = None,
+        allow_no_password: bool = None,
+        authenticator_names: list[str] = None,
 ):
     server_class = ThreadingHTTPServer if threaded else HTTPServer
     server_address = (ip, port)
+    authenticators = None if authenticator_names is None else [
+        auth
+        for auth in authenticator.get_authenticators()
+        if auth.get_name() in authenticator_names
+    ]
 
     print(f"Start {server_class.__name__} at: ", server_address)
-    httpd = server_class(server_address, handler.make_ngx_auth_request_handler(**kwargs))
+    httpd = server_class(server_address, handler.make_ngx_auth_request_handler(
+        success_code=success_code,
+        error_code=error_code,
+        realm=realm,
+        allow_anonymous=allow_anonymous,
+        allow_no_password=allow_no_password,
+        authenticators=authenticators,
+    ))
     httpd.serve_forever()
 
 
