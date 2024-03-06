@@ -1,4 +1,5 @@
 import subprocess
+import pam
 
 
 class Authenticator:
@@ -65,7 +66,6 @@ class PamAuthenticator(Authenticator):
         service = next(iter(parameters.get('service') or []), None)
         if service is None:
             return False
-        import pam
         return pam.authenticate(username=username, password=password, service=service)
 
 
