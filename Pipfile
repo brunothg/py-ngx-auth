@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 click = "~=8.1"
 python-pam = "~=2.0"
+six = "~=1.16"
 
 [dev-packages]
 pyinstaller = "~=6.4"

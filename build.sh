@@ -11,13 +11,17 @@ while [ -L "${SCRIPT_PATH}" ]; do
 done
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 SRC_DIR="$SCRIPT_DIR/src"
-BIN_DIR="$SCRIPT_DIR/bin"
+DIST_DIR="$SCRIPT_DIR/dist"
+BUILD_DIR="$SCRIPT_DIR/build"
 
-mkdir -p "$BIN_DIR"
-rm -rf "${BIN_DIR:?}"/*
+mkdir -p "$DIST_DIR"
+rm -rf "${$DIST_DIR:?}"/*
+
+mkdir -p "$BUILD_DIR"
+rm -rf "${BUILD_DIR:?}"/*
 
 ( \
   cd "$SCRIPT_DIR" \
-  && pipenv install \
-  && pipenv run pyinstaller "$SRC_DIR" \
+  && pipenv install --dev \
+  && pipenv run pyinstaller --workpath "$BUILD_DIR/work" --specpath "$BUILD_DIR/spec" --distpath "$DIST_DIR" --onefile "$SRC_DIR/ngx-auth.py" \
 )
