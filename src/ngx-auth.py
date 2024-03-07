@@ -9,10 +9,10 @@ import handler
 
 @click.command()
 @click.option('--port', '-p', 'port', default=8080, help='Port number')
-@click.option('--ip', '-i', 'ip', default='0.0.0.0', help='IP address')
+@click.option('--ip', '-i', 'ip', default='127.0.0.1', help='IP address')
 @click.option('--threaded/--blocking', 'threaded', default=True, help='Threaded or blocking mode')
 def main(
-        ip: str = '0.0.0.0',
+        ip: str = '127.0.0.1',
         port: int = 8080,
         threaded: bool = False,
 ):
